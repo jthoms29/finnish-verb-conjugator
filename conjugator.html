@@ -1,0 +1,466 @@
+<html>
+    <head></head>
+    <body>
+        <h2>Finnish Verb Conjugator</h2>
+        <p>A simple verb conjugator for Finnish. Given a verb in its infinitve form, present and negative imperfect tenses are shown</p>
+        <input type="text" id="input" placeholder="Enter a verb in its infinitive form...">
+        <button onclick="inflect()">Submit</button>
+        <div id="container"></div>
+
+    </body>
+
+
+    <script>
+
+    function split_syllables(phrase) {
+        // in finnish, every syllable has one vowel or diphthong
+        // syllable boundary is before a single consonant between vowels
+        const vowels = /[aeiouyäö]/u;
+        // not every sequence of two vowels is a dipthong apperrantly, have to explicitly check
+        // this includes long vowels
+        const diphthongs = /([aeouyäö]i|[aeoi]u|ie|uo|yö|aa|ää|ee|ii|oo|uu|yy|öö)/u;
+        const chars = phrase.split("");
+        let syllables = [];
+
+        let i = 0;
+        let syl_start = 0;
+        while (i < chars.length) {
+            //skip over vowel or diphthong
+            if (vowels.test(chars[i])) {
+                if (i+1 < chars.length && diphthongs.test(chars[i]+chars[i+1])) {
+                    i+=2;
+                }
+                else {
+                    i++;
+                }
+
+                let after_vowel = i;
+                // find next vowel
+                while (i < chars.length && !vowels.test(chars[i])) { i++; }
+
+                let diff = i - after_vowel;
+
+                // if the difference two vowels that aren't a dipthong is 0, put a break in between
+                if (diff == 0) {
+                    syllables.push(chars.slice(syl_start, i).join(''));
+                    syl_start = i;
+                }
+                // if the difference between two vowels is 1, put a break before this center consonant
+                else if (diff == 1) {
+                    syllables.push(chars.slice(syl_start, after_vowel).join(''));
+                    syl_start = after_vowel;
+                }
+                //multiple consonants between the vowels. Put a break before the last one
+                else if (diff >= 2) {
+                    syllables.push(chars.slice(syl_start, i-1).join(''));
+                    syl_start = i-1;
+                }
+            }
+
+            //word initial consonants
+            else {
+                i++;
+            }
+        }
+
+        // any remainder is the last syllable
+        if (syl_start < chars.length) {
+            syllables.push(chars.slice(syl_start).join(''));
+        }
+
+        return syllables;
+
+    }
+
+
+    function consonant_gradation_to_weak(phrase) {
+        // certain inflections modify consonants within the verb. Consonant gradation
+
+        // consonant gradation can only take place between the border of the second-to-last and last
+        // syllable, so I have to split those as well
+
+        let syllables = split_syllables(phrase)
+    
+        let gradate = '';
+        // gradation only applies to words with more than one syllable
+
+        if (syllables.length >= 2) {
+
+            
+
+
+            // get last two syllables
+            let second_last_idx = syllables.length - 2;
+            gradate = syllables.slice(second_last_idx, syllables.length).join('');
+
+            // certain clusters never gradate, swap those out
+            gradate = gradate.replace('st', '1');
+            gradate = gradate.replace('tš', '2');
+            gradate = gradate.replace('st', '3');
+            gradate = gradate.replace('sk', '4');
+            gradate = gradate.replace('sp', '5');
+            gradate = gradate.replace('tk', '6');
+            gradate = gradate.replace('rk', '7');
+            gradate = gradate.replace('nk', '8');
+            gradate = gradate.replace('lp', '9');
+            gradate = gradate.replace('rp', '0');
+            gradate = gradate.replace('ts', '*');
+
+
+
+            // if exactly 2 syllables don't want to change start of word
+            if (syllables.length === 2) {
+                //cant just use \B, doesn't work with unicode characters
+                //checks if there are letters before and after the characters - should be word internal
+                gradate = gradate.replace(/(?<=\p{L})kk(?=\p{L})/u, '$');
+                gradate = gradate.replace(/(?<=\p{L})pp(?=\p{L})/u, '%');
+                gradate = gradate.replace(/(?<=\p{L})tt(?=\p{L})/u, '@');
+                gradate = gradate.replace(/(?<=\p{L})nt(?=\p{L})/u, 'nn');
+                gradate = gradate.replace(/(?<=\p{L})nk(?=\p{L})/u, 'ng');
+                gradate = gradate.replace(/(?<=\p{L})mp(?=\p{L})/u, 'mm');
+                gradate = gradate.replace(/(?<=\p{L})lt(?=\p{L})/u, 'll');
+                gradate = gradate.replace(/(?<=\p{L})rt(?=\p{L})/u, 'rr');
+                gradate = gradate.replace(/(?<=\p{L})t(?=\p{L})/u, 'd');
+                gradate = gradate.replace(/(?<=\p{L})lke(?=\p{L})/u, 'lje');
+                gradate = gradate.replace(/(?<=\p{L})rke(?=\p{L})/u, 'rje');
+                gradate = gradate.replace(/(?<=\p{L})k(?=\p{L})/u, ''); // k changing to v only applies to 5 words, all nouns so I don't have to worry
+                gradate = gradate.replace(/(?<=\p{L})p(?=\p{L})/u, 'v');
+            }
+            // otherwise I can
+            else {
+                gradate = gradate.replace(/kk(?=\p{L})/u, '$');
+                gradate = gradate.replace(/pp(?=\p{L})/u, '%');
+                gradate = gradate.replace(/tt(?=\p{L})/u, '@');
+                gradate = gradate.replace(/nt(?=\p{L})/u, 'nn');
+                gradate = gradate.replace(/nk(?=\p{L})/u, 'ng');
+                gradate = gradate.replace(/mp(?=\p{L})/u, 'mm');
+                gradate = gradate.replace(/lt(?=\p{L})/u, 'll');
+                gradate = gradate.replace(/rt(?=\p{L})/u, 'rr');
+                gradate = gradate.replace(/t(?=\p{L})/u, 'd');
+                gradate = gradate.replace(/lke(?=\p{L})/u, 'lje');
+                gradate = gradate.replace(/rke(?=\p{L})/u, 'rje');
+                gradate = gradate.replace(/k(?=\p{L})/u, ''); // k changing to v only applies to 5 words, all nouns so I don't have to worry
+                gradate = gradate.replace(/p(?=\p{L})/u, 'v');
+            }
+            //replace placeholders
+            gradate = gradate.replace('$', 'k');
+            gradate = gradate.replace('%', 'p');
+            gradate = gradate.replace('@', 't');
+
+            gradate = gradate.replace('1', 'st');
+            gradate = gradate.replace('2', 'tš');
+            gradate = gradate.replace('3', 'st');
+            gradate = gradate.replace('4', 'sk');
+            gradate = gradate.replace('5', 'sp');
+            gradate = gradate.replace('6', 'tk');
+            gradate = gradate.replace('7', 'rk');
+            gradate = gradate.replace('8', 'nk');
+            gradate = gradate.replace('9', 'lp');
+            gradate = gradate.replace('0', 'rp');
+            gradate = gradate.replace('*', 'ts');
+
+            // put front of word back on
+            if (second_last_idx > 0) {
+                gradate = syllables.slice(0, second_last_idx).join('') + gradate
+            }
+        }
+        // only one syllable, no gradation
+        else {
+            gradate = phrase;
+        }
+
+        return gradate;
+    }
+
+
+    function consonant_gradation_to_strong(phrase) {
+        let syllables = split_syllables(phrase)
+    
+        let gradate = '';
+        // gradation only applies to words with more than one syllable
+
+        if (syllables.length >= 2) {
+            // get last two syllables
+            let second_last_idx = syllables.length - 2;
+            gradate = syllables.slice(second_last_idx, syllables.length).join('');
+
+            // if exactly 2 syllables don't want to change start of word
+            if (syllables.length == 2) {
+                //cant just use \B, doesn't work with unicode characters
+                //checks if there are letters before and after the characters - should be word internal
+                gradate = gradate.replace(/(?<=\p{L})k(?=\p{L})/u, 'kk');
+                gradate = gradate.replace(/(?<=\p{L})p(?=\p{L})/u, 'pp');
+                gradate = gradate.replace(/(?<=\p{L})t(?=\p{L})/u, 'tt');
+                gradate = gradate.replace(/(?<=\p{L})nn(?=\p{L})/u, 'nt');
+                gradate = gradate.replace(/(?<=\p{L})ng(?=\p{L})/u, 'nk');
+                gradate = gradate.replace(/(?<=\p{L})mm(?=\p{L})/u, 'mp');
+                gradate = gradate.replace(/(?<=\p{L})ll(?=\p{L})/u, 'lt');
+                gradate = gradate.replace(/(?<=\p{L})rr(?=\p{L})/u, 'rt');
+                gradate = gradate.replace(/(?<=\p{L})d(?=\p{L})/u, 't');
+                gradate = gradate.replace(/(?<=\p{L})lje(?=\p{L})/u, 'lke');
+                gradate = gradate.replace(/(?<=\p{L})rje(?=\p{L})/u, 'rke');
+                //gradate = gradate.replace(/(?<=\p{L})k(?=\p{L})/u, ''); // k changing to v only applies to 5 words, all nouns so I don't have to worry
+                gradate = gradate.replace(/(?<=\p{L})v(?=\p{L})/u, 'p');
+            }
+            // otherwise I can
+            else {
+                gradate = gradate.replace(/k(?=\p{L})/u, 'kk');
+                gradate = gradate.replace(/p(?=\p{L})/u, 'pp');
+                gradate = gradate.replace(/t(?=\p{L})/u, 'tt');
+                gradate = gradate.replace(/nn(?=\p{L})/u, 'nt');
+                gradate = gradate.replace(/ng(?=\p{L})/u, 'nk');
+                gradate = gradate.replace(/mm(?=\p{L})/u, 'mp');
+                gradate = gradate.replace(/ll(?=\p{L})/u, 'lt');
+                gradate = gradate.replace(/rr(?=\p{L})/u, 'rt');
+                gradate = gradate.replace(/d(?=\p{L})/u, 't');
+                gradate = gradate.replace(/lje(?=\p{L})/u, 'lke');
+                gradate = gradate.replace(/rje(?=\p{L})/u, 'rke');
+                //gradate = gradate.replace(/k(?=\p{L})/u, ''); // k changing to v only applies to 5 words, all nouns so I don't have to worry
+                gradate = gradate.replace(/v(?=\p{L})/u, 'p');
+            }
+
+            // put front of word back on
+            if (second_last_idx > 0) {
+                gradate = syllables.slice(0, second_last_idx).join('') + gradate
+            }
+        }
+        // only one syllable, no gradation
+        else {
+            gradate = phrase;
+        }
+
+        return gradate;
+    }
+
+
+    function inflect() {
+
+        let phrase = document.getElementById("input").value;
+
+        // six possible endings to verb's infinitive form. These indicate what type of verb
+        const type_1 = /[aäeiouy][aä]/u;
+        const type_2 = /d[aä]/u;
+        const type_3 = /[^aäeiouy][^aäeiouy][aäeiouy]/u;
+        const type_4 = /[aäoöuy]t[aä]/u;
+        const type_5 = /it[aä]/u;
+        const type_6 = /et[aä]/u;
+
+        // last two and last 3 characters of verb
+        const last_2 = phrase.slice(-2, phrase.length);
+        const last_3 = phrase.slice(-3, phrase.length);
+
+        // figure out what type the verb is
+        let type = -1
+        if (type_1.test(last_2)) { type = 1; }
+        else if (type_2.test(last_2)) { type = 2; }
+        else if (type_3.test(last_3)) { type = 3; }
+        else if (type_4.test(last_3)) { type = 4; }
+        else if (type_5.test(last_3)) { type = 5; }
+        else if (type_6.test(last_3)) { type = 6; }
+
+
+                let mina = '';
+                let sina = '';
+                let han = '';
+                let me = '';
+                let te = '';
+                let he = '';
+
+
+
+        //get present tenses for all pronouns
+        switch(type) {
+            case 1:
+                sliced = phrase.slice(0, -1);
+                weak_sliced = consonant_gradation_to_weak(sliced);
+                mina = weak_sliced + 'n';
+                sina = weak_sliced + 't';
+                han = sliced + phrase.slice(-2,-1);
+                me = weak_sliced + 'mme';
+                te = weak_sliced + 'tte';
+                if (/[aou]/.test(phrase)) { he = sliced + 'vat';}
+                else { he = sliced +'vät';}
+                break;
+
+
+            case 2:
+                // this verb type has some words with irregular gradation that I don't feel like dealing with
+                // cut off the 'da'
+                sliced = phrase.slice(0, -2);
+
+                mina = sliced + 'n';
+                sina = sliced + 't';
+                han = sliced; //just cut it off
+                me = sliced + 'mme';
+                te = sliced + 'tte';
+                if (/[aou]/.test(phrase)) { he = sliced + 'vat';}
+                else { he = sliced +'vät';}
+                break;
+
+            case 3:
+                sliced = phrase.slice(0, -2);
+                // all undergo gradation
+                sliced = consonant_gradation_to_strong(sliced);
+                // cut off the last two letters
+                //sliced = sliced.slice(0, -2);
+                //add an 'e' to all
+                sliced += 'e';
+
+                mina = sliced + 'n';
+                sina = sliced + 't';
+                han = sliced + 'e'; //just cut it off
+                me = sliced + 'mme';
+                te = sliced + 'tte';
+                if (/[aou]/.test(phrase)) { he = sliced + 'vat';}
+                else { he = sliced +'vät';}
+                break;
+
+
+            case 4:
+                // slice off last two, add 'a'
+                sliced = phrase.slice(0, -2);
+                // for han
+                let check = sliced[sliced.length-1] === 'a';
+
+                //all undergo gradation
+                sliced = consonant_gradation_to_strong(sliced);
+
+                sliced += 'a';
+
+                mina = sliced + 'n';
+                sina = sliced + 't';
+
+                // add a to end when two vowels from stem are different
+                if (check) {
+                    han = sliced;
+                }
+                else {
+                    han = sliced + 'a'
+                }
+                me = sliced + 'mme';
+                te = sliced + 'tte';
+                if (/[aou]/.test(phrase)) { he = sliced + 'vat';}
+                else { he = sliced +'vät';}
+                break;
+
+            case 5:
+                sliced = phrase.slice(0, -2);
+                sliced += 'tse';
+                mina = sliced + 'n';
+                sina = sliced + 't';
+                han = sliced + 'e'; //just cut it off
+                me = sliced + 'mme';
+                te = sliced + 'tte';
+                if (/[aou]/.test(phrase)) { he = sliced + 'vat';}
+                else { he = sliced +'vät';}
+                break;
+
+            case 6:
+                sliced = phrase.slice(0, -2);
+                sliced = consonant_gradation_to_strong(sliced)
+                sliced += 'ne'
+
+                mina = sliced + 'n';
+                sina = sliced + 't';
+                han = sliced + 'e'; //just cut it off
+                me = sliced + 'mme';
+                te = sliced + 'tte';
+                if (/[aou]/.test(phrase)) { he = sliced + 'vat';}
+                else { he = sliced +'vät';}
+
+                break;
+        }
+
+        //and negative imperfect
+        switch(type) {
+            //case 1 and 2 mostly the same
+            case 1:
+            case 2:
+                if (type == 1) { stem = phrase.slice(0, -1); }
+                else { stem = phrase.slice(0, -2); }
+
+                //vowel harmony
+                if (/[aou]/.test(phrase)) { suffix1 = 'nut';}
+                else { suffix1 = 'nyt';}
+                suffix2 = 'neet';
+
+
+                mina_past = 'en ' + stem + suffix1;
+                sina_past = 'et ' + stem + suffix1;
+                han_past = 'ei ' + stem + suffix1;
+                me_past = 'emme ' + stem + suffix2;
+                te_past = 'ette ' + stem + suffix2;
+                he_past = 'eivät ' + stem + suffix2;
+
+                break;
+
+            case 3:
+
+                stem = phrase.slice(0, -2);
+                //double last consonant of stem
+                stem += stem.slice(-1);
+
+                if (/[aou]/.test(phrase)) { suffix1 = 'ut';}
+                else { suffix1 = 'yt';}
+                suffix2 = 'eet';
+
+                mina_past = 'en ' + stem + suffix1;
+                sina_past = 'et ' + stem + suffix1;
+                han_past = 'ei ' + stem + suffix1;
+                me_past = 'emme ' + stem + suffix2;
+                te_past = 'ette ' + stem + suffix2;
+                he_past = 'eivät ' + stem + suffix2;
+
+
+            break;
+
+            // all the same
+            case 4:
+            case 5:
+            case 6:
+                stem = phrase.slice(0, -2);
+                if (/[aou]/.test(phrase)) { suffix1 = 'nnut';}
+                else { suffix1 = 'nnyt';}
+                suffix2 = 'nneet';
+
+                mina_past = 'en ' + stem + suffix1;
+                sina_past = 'et ' + stem + suffix1;
+                han_past = 'ei ' + stem + suffix1;
+                me_past = 'emme ' + stem + suffix2;
+                te_past = 'ette ' + stem + suffix2;
+                he_past = 'eivät ' + stem + suffix2;
+
+        }
+
+        vals =  {
+            'Mina (I)': mina,
+            'Sina (You)': sina,
+            'Han (He/She)': han,
+            'Me (We)': me,
+            'Te (You)': te,
+            'He (They)': he,
+            'Mina (I) Negative Imperfect': mina_past,
+            'Sina (You) Negative Imperfect': sina_past,
+            'Han (He/She) Negative Imperfect': han_past,
+            'Me (We) Negative Imperfect': me_past,
+            'Te (You) Negative Imperfect': te_past,
+            'He (They) Negative Imperfect': he_past
+        }
+
+        let container = document.getElementById("container");
+        let table = "<table border='1' cellpadding='5'>"
+        //build a table
+        for (el in vals) {
+            table += "<tr>";
+            table += "<td>" + el + "</td>";
+            table += "<td>" + vals[el] + "</td>";
+            table += "</tr>";
+        }
+        table += "</table>"
+        container.innerHTML = table;
+
+
+    }
+
+    </script>
+</html>
