@@ -40,8 +40,14 @@
 
                 let diff = i - after_vowel;
 
+                //special case, consonant is word final. Should be included in syllable
+                if (i === chars.length) {
+                    syllables.push(chars.slice(syl_start, i+1).join(''));
+                    syl_start = i+1;
+                }
+
                 // if the difference two vowels that aren't a dipthong is 0, put a break in between
-                if (diff == 0) {
+                else if (diff == 0) {
                     syllables.push(chars.slice(syl_start, i).join(''));
                     syl_start = i;
                 }
@@ -176,6 +182,7 @@
     function consonant_gradation_to_strong(phrase) {
         let syllables = split_syllables(phrase)
     
+        console.log(syllables);
         let gradate = '';
         // gradation only applies to words with more than one syllable
 
@@ -183,6 +190,21 @@
             // get last two syllables
             let second_last_idx = syllables.length - 2;
             gradate = syllables.slice(second_last_idx, syllables.length).join('');
+            console.log(gradate)
+
+            // certain clusters never gradate, swap those out
+            gradate = gradate.replace('st', '1');
+            gradate = gradate.replace('tš', '2');
+            gradate = gradate.replace('st', '3');
+            gradate = gradate.replace('sk', '4');
+            gradate = gradate.replace('sp', '5');
+            gradate = gradate.replace('tk', '6');
+            gradate = gradate.replace('rk', '7');
+            gradate = gradate.replace('nk', '8');
+            gradate = gradate.replace('lp', '9');
+            gradate = gradate.replace('rp', '0');
+            gradate = gradate.replace('ts', '*');
+            console.log(gradate);
 
             // if exactly 2 syllables don't want to change start of word
             if (syllables.length == 2) {
@@ -218,6 +240,18 @@
                 //gradate = gradate.replace(/k(?=\p{L})/u, ''); // k changing to v only applies to 5 words, all nouns so I don't have to worry
                 gradate = gradate.replace(/v(?=\p{L})/u, 'p');
             }
+            //replace placeholders
+            gradate = gradate.replace('1', 'st');
+            gradate = gradate.replace('2', 'tš');
+            gradate = gradate.replace('3', 'st');
+            gradate = gradate.replace('4', 'sk');
+            gradate = gradate.replace('5', 'sp');
+            gradate = gradate.replace('6', 'tk');
+            gradate = gradate.replace('7', 'rk');
+            gradate = gradate.replace('8', 'nk');
+            gradate = gradate.replace('9', 'lp');
+            gradate = gradate.replace('0', 'rp');
+            gradate = gradate.replace('*', 'ts');
 
             // put front of word back on
             if (second_last_idx > 0) {
@@ -308,7 +342,7 @@
 
                 mina = sliced + 'n';
                 sina = sliced + 't';
-                han = sliced + 'e'; //just cut it off
+                han = sliced + 'e'; 
                 me = sliced + 'mme';
                 te = sliced + 'tte';
                 if (/[aou]/.test(phrase)) { he = sliced + 'vat';}
@@ -320,12 +354,16 @@
                 // slice off last two, add 'a'
                 sliced = phrase.slice(0, -2);
                 // for han
-                let check = sliced[sliced.length-1] === 'a';
+                let check = sliced[sliced.length-1] === 'a' || sliced[sliced.length-1] === 'ä';
 
                 //all undergo gradation
                 sliced = consonant_gradation_to_strong(sliced);
 
-                sliced += 'a';
+                //vowel harmony
+                if (/[aou]/.test(phrase)) { addition = 'a';}
+                else { addition = 'ä'}
+
+                sliced += addition;
 
                 mina = sliced + 'n';
                 sina = sliced + 't';
@@ -335,7 +373,7 @@
                     han = sliced;
                 }
                 else {
-                    han = sliced + 'a'
+                    han = sliced + addition;
                 }
                 me = sliced + 'mme';
                 te = sliced + 'tte';
@@ -369,6 +407,13 @@
                 else { he = sliced +'vät';}
 
                 break;
+            case -1:
+                mina = 'invalid input';
+                sina = 'invalid input';
+                han = 'invalid input';
+                me = 'invalid input';
+                te = 'invalid input';
+                he = 'invalid input';
         }
 
         //and negative imperfect
@@ -429,6 +474,16 @@
                 me_past = 'emme ' + stem + suffix2;
                 te_past = 'ette ' + stem + suffix2;
                 he_past = 'eivät ' + stem + suffix2;
+            break;
+
+            case -1:
+                mina_past = 'invalid input';
+                sina_past = 'invalid input';
+                han_past = 'invalid input';
+                me_past = 'invalid input';
+                te_past = 'invalid input';
+                he_past = 'invalid input';
+
 
         }
 

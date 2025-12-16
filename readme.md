@@ -19,7 +19,7 @@ When conjugating a Finnish verb, sometimes the word will undergo consonant grada
 certain consonants within the word will change. There are two versions - weak gradation and strong gradation, and
 different verb types switch between different versions.
 This gradation only occurs on the border of the second-to-last and last syllable for the verb's infinitive root,
-so I that is taken into account. There are other rules outlined in the link above.
+so I that is taken into account. There are other rules outlined in the link above, including certain clusters of consonants that never change.
 
 ## Issues
 Irregular forms aren't accounted for the most part. Most of the present issues come from irregularities in consonant gradation.
@@ -41,5 +41,5 @@ here the output here is 'juosen'.
 
 
 Most type 4 verbs undergo consonant gradation, but there are some irregular forms that don't. There's 
-no real way to tell which ones don't. For example, the first person singular form of 'avata' should be
+no real pattern to which ones don't. For example, the first person singular form of 'avata' should be
 'avaan', but the output here is 'apaan'.
